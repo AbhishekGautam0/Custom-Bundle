@@ -2,12 +2,11 @@
 
 client_id = "5a0ff075be67b7eda4ea154c1d1dcd2e"
 name = "custom-bundle-app"
-application_url = "https://example.com"
+application_url = "https://custom-bundle-production.up.railway.app"
 embedded = true
 
 [build]
 automatically_update_urls_on_dev = true
-include_config_on_deploy = true
 
 [webhooks]
 api_version = "2026-04"
@@ -25,7 +24,7 @@ api_version = "2026-04"
 scopes = "read_products,write_metaobject_definitions,write_metaobjects,write_products"
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [ "https://custom-bundle-production.up.railway.app/api/auth" ]
 
 [product.metafields.app.demo_info]
 type = "single_line_text_field"
