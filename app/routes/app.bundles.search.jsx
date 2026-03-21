@@ -19,6 +19,8 @@ export const action = async ({ request }) => {
 
   const { admin } = await authenticate.admin(request);
 
+  const searchQuery = q ? `status:ACTIVE AND title:*${q}*` : "status:ACTIVE";
+
   const query = `#graphql
     query SearchProducts($query: String!) {
       products(first: 20, query: $query) {
@@ -26,6 +28,7 @@ export const action = async ({ request }) => {
           node {
             id
             title
+            status
             featuredImage {
               url
               altText
@@ -35,6 +38,7 @@ export const action = async ({ request }) => {
                 node {
                   id
                   title
+                  availableForSale
                 }
               }
             }
@@ -45,7 +49,7 @@ export const action = async ({ request }) => {
   `;
 
   const response = await admin.graphql(query, {
-    variables: { query: q },
+    variables: { query: searchQuery },
   });
   const jsonResp = await response.json();
 
@@ -61,9 +65,9 @@ export const action = async ({ request }) => {
       id: n.id,
       title: n.title,
       featuredImage: n.featuredImage,
-      variants: n.variants?.edges?.map((e) => e.node) ?? [],
+      variants: (n.variants?.edges?.map((e) => e.node) ?? []).filter(v => v.availableForSale),
     };
-  });
+  }).filter(p => p.variants.length > 0);
 
   return json({ products, error: null });
 };
