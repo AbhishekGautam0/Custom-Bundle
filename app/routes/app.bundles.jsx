@@ -104,6 +104,7 @@ export default function BundlesPage() {
 
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
   const debounceRef = useRef(null);
 
@@ -275,14 +276,26 @@ export default function BundlesPage() {
   const handleConfirmDelete = useCallback(async () => {
     if (!deleteTarget) return;
     setDeleteLoading(true);
+    setDeleteError(null);
     try {
-      const res = await fetch(`/api/bundles/${deleteTarget.id}`, {
+      // Bundle id includes GIDs with "/" and ":" — must encode or the URL breaks.
+      const url = `/api/bundles/${encodeURIComponent(deleteTarget.id)}`;
+      const res = await fetch(url, {
         method: "DELETE",
+        credentials: "same-origin",
+        headers: { Accept: "application/json" },
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setDeleteTarget(null);
         revalidator.revalidate();
+      } else {
+        setDeleteError(
+          data.error || `Could not delete (${res.status}). Try again.`,
+        );
       }
+    } catch {
+      setDeleteError("Network error. Try again.");
     } finally {
       setDeleteLoading(false);
     }
@@ -619,7 +632,10 @@ export default function BundlesPage() {
 
       <Modal
         open={Boolean(deleteTarget)}
-        onClose={() => setDeleteTarget(null)}
+        onClose={() => {
+          setDeleteTarget(null);
+          setDeleteError(null);
+        }}
         title="Delete bundle"
         primaryAction={{
           content: "Delete bundle",
@@ -630,15 +646,25 @@ export default function BundlesPage() {
         secondaryActions={[
           {
             content: "Cancel",
-            onAction: () => setDeleteTarget(null),
+            onAction: () => {
+              setDeleteTarget(null);
+              setDeleteError(null);
+            },
           },
         ]}
       >
         <Modal.Section>
-          <Text as="p">
-            Remove this bundle? The product page will no longer show these
-            bundled items for the main product.
-          </Text>
+          <BlockStack gap="300">
+            {deleteError ? (
+              <Banner tone="critical" onDismiss={() => setDeleteError(null)}>
+                <p>{deleteError}</p>
+              </Banner>
+            ) : null}
+            <Text as="p">
+              Remove this bundle? The product page will no longer show these
+              bundled items for the main product.
+            </Text>
+          </BlockStack>
         </Modal.Section>
       </Modal>
     </Page>

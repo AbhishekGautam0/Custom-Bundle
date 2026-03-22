@@ -15,9 +15,14 @@ export const action = async ({ request, params }) => {
     return json({ error: "Method not allowed" }, { status: 405 });
   }
 
-  const bundleId = params.bundleId;
+  let bundleId = params.bundleId;
   if (!bundleId) {
     return json({ error: "Missing bundle id" }, { status: 400 });
+  }
+  try {
+    bundleId = decodeURIComponent(bundleId);
+  } catch {
+    // use raw param
   }
 
   const { session } = await authenticate.admin(request);
