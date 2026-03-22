@@ -41,10 +41,19 @@ export const loader = async ({ request, params }) => {
       admin = ctx.admin;
       shop = ctx.session.shop;
     } catch {
-      return new Response(JSON.stringify({ bundle: null, error: "Invalid shop" }), {
-        status: 200,
-        headers: corsJsonHeaders,
-      });
+      return new Response(
+        JSON.stringify({
+          bundle: null,
+          products: [],
+          error: "offline_session_missing",
+          message:
+            "Open the app once in Shopify Admin for this store so bundles can load on the storefront.",
+        }),
+        {
+          status: 200,
+          headers: corsJsonHeaders,
+        },
+      );
     }
   } else {
     try {

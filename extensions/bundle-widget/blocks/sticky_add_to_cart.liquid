@@ -1,0 +1,448 @@
+{% comment %}
+  Sticky add-to-cart bar (Dawn-friendly). Visible only when the theme's real ATC button scrolls out of view.
+  Sticky button triggers a click on the real add-to-cart button in the product section.
+{% endcomment %}
+
+<script type="application/json" id="StickyAtcData-{{ block.id }}">
+  {
+    "productTitle": {{ product.title | json }},
+    "variants": [
+      {% for variant in product.variants %}
+        {
+          "id": {{ variant.id | json }},
+          "title": {{ variant.title | json }},
+          "sku": {{ variant.sku | json }},
+          "available": {{ variant.available | json }},
+          "price": {{ variant.price | money | json }},
+          "compare_at": {% if variant.compare_at_price %}{{ variant.compare_at_price | money | json }}{% else %}null{% endif %},
+          "image": {% if variant.featured_image %}{{ variant.featured_image | image_url: width: 160 | json }}{% elsif product.featured_image %}{{ product.featured_image | image_url: width: 160 | json }}{% else %}""{% endif %}
+        }{% unless forloop.last %},{% endunless %}
+      {% endfor %}
+    ]
+  }
+</script>
+
+<div
+  class="sticky-atc"
+  data-sticky-atc
+  data-block-id="{{ block.id }}"
+  data-sticky-mode="{% if block.settings.always_show_bar %}always{% else %}scroll{% endif %}"
+  data-show-product-title="{% if block.settings.show_product_title %}true{% else %}false{% endif %}"
+  hidden
+  aria-hidden="true"
+  style="
+    --sticky-atc-bg: {{ block.settings.bar_background }};
+    --sticky-atc-text: {{ block.settings.text_color }};
+    --sticky-atc-btn-bg: {{ block.settings.button_background }};
+    --sticky-atc-btn-text: {{ block.settings.button_text_color }};
+    --sticky-atc-radius: {{ block.settings.corner_radius }}px;
+    --sticky-atc-pad: {{ block.settings.bar_padding }}px;
+    --sticky-atc-bottom: {{ block.settings.bottom_offset }}px;
+    --sticky-atc-z: {{ block.settings.z_index }};
+    {% if block.settings.show_shadow %}--sticky-atc-shadow: 0 -4px 24px rgba(0,0,0,0.12);{% else %}--sticky-atc-shadow: none;{% endif %}
+  "
+>
+  <div class="sticky-atc__inner">
+    <div class="sticky-atc__panel">
+      <div class="sticky-atc__main-row">
+        <div class="sticky-atc__media">
+          <img class="sticky-atc__img" src="" alt="" width="72" height="72" loading="lazy" />
+        </div>
+        <div class="sticky-atc__copy">
+          <p class="sticky-atc__product sticky-atc__text--subdued"></p>
+          <p class="sticky-atc__variant sticky-atc__text--strong"></p>
+          <p class="sticky-atc__sku sticky-atc__text--subdued" hidden></p>
+        </div>
+        <div class="sticky-atc__price-block">
+          <p class="sticky-atc__price sticky-atc__text--price"></p>
+        </div>
+      </div>
+      <div class="sticky-atc__actions">
+        <p class="sticky-atc__setup sticky-atc__text--critical" hidden></p>
+        <button type="button" class="sticky-atc__btn sticky-atc__btn--polaris-primary">
+          {{ block.settings.button_label | default: 'Add to cart' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if request.design_mode %}
+  <p class="sticky-atc__theme-hint">
+    <strong>Sticky ATC:</strong> Scroll past the main Add to cart button to see the bar, or enable “Always show bar” in block settings. Place this block on the <strong>product</strong> template (same page as the buy buttons).
+  </p>
+  <style>
+    .sticky-atc__theme-hint {
+      font-size: 13px;
+      padding: 10px 12px;
+      margin: 8px 0 0;
+      background: #e8f4ff;
+      border: 1px solid #7ab6ff;
+      border-radius: 8px;
+      color: #042d63;
+    }
+  </style>
+{% endif %}
+
+<style>
+  /* Responsive Polaris-style sticky bar */
+  .sticky-atc {
+    --sticky-p-font: var(--font-body-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
+    --sticky-p-surface: var(--sticky-atc-bg, #f1f2f4);
+    --sticky-p-surface-raised: #ffffff;
+    --sticky-p-text: var(--sticky-atc-text, #202223);
+    --sticky-p-text-subdued: #6d7175;
+    --sticky-p-border: #e1e3e5;
+    --sticky-p-primary: var(--sticky-atc-btn-bg, #202223);
+    --sticky-p-primary-text: var(--sticky-atc-btn-text, #ffffff);
+    --sticky-p-radius: max(var(--sticky-atc-radius, 12px), 8px);
+    box-sizing: border-box;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: var(--sticky-atc-bottom, 0px);
+    z-index: var(--sticky-atc-z, 30);
+    font-family: var(--sticky-p-font);
+    -webkit-font-smoothing: antialiased;
+    background: var(--sticky-p-surface);
+    color: var(--sticky-p-text);
+    box-shadow: var(--sticky-atc-shadow, 0 -4px 20px rgba(0, 0, 0, 0.08));
+    padding: max(10px, var(--sticky-atc-pad, 12px)) clamp(12px, 4vw, 20px);
+    padding-bottom: calc(max(10px, var(--sticky-atc-pad, 12px)) + env(safe-area-inset-bottom, 0px));
+    transform: translateY(100%);
+    opacity: 0;
+    visibility: hidden;
+    transition: transform 0.28s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.2s ease, visibility 0.2s;
+    border-top-left-radius: var(--sticky-p-radius);
+    border-top-right-radius: var(--sticky-p-radius);
+    border-top: 1px solid var(--sticky-p-border);
+  }
+  .sticky-atc *,
+  .sticky-atc *::before,
+  .sticky-atc *::after {
+    box-sizing: border-box;
+  }
+  .sticky-atc.sticky-atc--visible {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+  }
+  .sticky-atc__inner {
+    width: 100%;
+    max-width: min(1200px, 100%);
+    margin: 0 auto;
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+  .sticky-atc__panel {
+    width: 100%;
+    background: var(--sticky-p-surface-raised);
+    border: 1px solid var(--sticky-p-border);
+    border-radius: calc(var(--sticky-p-radius) * 0.9);
+    padding: clamp(12px, 3vw, 16px);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(10px, 2.5vw, 14px);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+  .sticky-atc__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+  }
+  .sticky-atc__main-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    gap: 0 12px;
+    align-items: start;
+    width: 100%;
+    min-width: 0;
+  }
+  .sticky-atc__media {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: center;
+    width: clamp(56px, 18vw, 72px);
+    height: clamp(56px, 18vw, 72px);
+    border-radius: calc(var(--sticky-p-radius) * 0.55);
+    overflow: hidden;
+    background: linear-gradient(145deg, #eceef0, #dfe3e6);
+    border: 1px solid var(--sticky-p-border);
+    flex-shrink: 0;
+  }
+  .sticky-atc__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .sticky-atc__copy {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    padding-right: 4px;
+  }
+  .sticky-atc__price-block {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
+    padding-top: 2px;
+  }
+  .sticky-atc__copy p,
+  .sticky-atc__price-block p,
+  .sticky-atc__setup {
+    margin: 0;
+  }
+  .sticky-atc__product {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+  }
+  .sticky-atc__variant {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+    margin-top: 4px !important;
+  }
+  .sticky-atc__sku {
+    margin-top: 4px !important;
+  }
+  .sticky-atc__text--subdued {
+    font-size: clamp(11px, 2.8vw, 13px);
+    line-height: 1.4;
+    font-weight: 500;
+    color: var(--sticky-p-text-subdued);
+  }
+  .sticky-atc__text--strong {
+    font-size: clamp(13px, 3.4vw, 15px);
+    line-height: 1.35;
+    font-weight: 600;
+    color: var(--sticky-p-text);
+    letter-spacing: -0.01em;
+  }
+  .sticky-atc__text--price {
+    font-size: clamp(15px, 4vw, 18px);
+    line-height: 1.25;
+    font-weight: 700;
+    color: var(--sticky-p-text);
+    letter-spacing: -0.02em;
+  }
+  .sticky-atc__text--critical {
+    font-size: clamp(11px, 2.8vw, 12px);
+    color: #d72c0d;
+    line-height: 1.4;
+    padding: 8px 10px;
+    background: #fff4f2;
+    border-radius: 8px;
+    border: 1px solid #fecdcd;
+  }
+  .sticky-atc__compare {
+    text-decoration: line-through;
+    color: var(--sticky-p-text-subdued);
+    font-weight: 500;
+    margin-right: 0.35em;
+    font-size: 0.88em;
+  }
+  .sticky-atc__btn--polaris-primary {
+    width: 100%;
+    margin: 0 !important;
+    background: var(--sticky-p-primary) !important;
+    color: var(--sticky-p-primary-text) !important;
+    border: none !important;
+    padding: 14px 20px !important;
+    min-height: 48px;
+    border-radius: calc(var(--sticky-p-radius) * 0.55) !important;
+    cursor: pointer;
+    font-size: clamp(14px, 3.6vw, 16px);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 -1px 0 rgba(0, 0, 0, 0.18) inset;
+    transition: transform 0.12s ease, filter 0.15s ease, box-shadow 0.15s ease;
+    touch-action: manipulation;
+  }
+  .sticky-atc__btn--polaris-primary:hover {
+    filter: brightness(1.08);
+  }
+  .sticky-atc__btn--polaris-primary:active {
+    transform: scale(0.99);
+  }
+  .sticky-atc__btn--polaris-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: none;
+    transform: none;
+  }
+  /* One row: image + text + price (no cramped side-by-side with button) */
+  @media (min-width: 400px) {
+    .sticky-atc__main-row {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 14px;
+    }
+    .sticky-atc__media {
+      grid-column: unset;
+      grid-row: unset;
+      width: 64px;
+      height: 64px;
+    }
+    .sticky-atc__copy {
+      grid-column: unset;
+      grid-row: unset;
+      flex: 1 1 auto;
+      min-width: 0;
+      padding-right: 8px;
+    }
+    .sticky-atc__price-block {
+      grid-column: unset;
+      grid-row: unset;
+      flex: 0 0 auto;
+      padding-top: 0;
+      text-align: right;
+      max-width: 38%;
+    }
+    .sticky-atc__price {
+      white-space: normal;
+      text-align: right;
+    }
+  }
+  /* Desktop: product row + actions column (button + errors) */
+  @media (min-width: 720px) {
+    .sticky-atc__panel {
+      flex-direction: row;
+      flex-wrap: nowrap;
+      align-items: stretch;
+      gap: 16px;
+    }
+    .sticky-atc__main-row {
+      flex: 1 1 auto;
+      min-width: 0;
+      align-self: center;
+    }
+    .sticky-atc__price-block {
+      max-width: 28%;
+    }
+    .sticky-atc__actions {
+      width: auto;
+      flex: 0 0 auto;
+      min-width: min(220px, 32vw);
+      max-width: 280px;
+      justify-content: center;
+    }
+    .sticky-atc__btn--polaris-primary {
+      width: 100%;
+      max-width: none;
+    }
+  }
+</style>
+
+<script src="{{ 'sticky-add-to-cart.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Sticky add to cart",
+  "target": "section",
+  "templates": ["product"],
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Polaris-style bar on the storefront (not React Polaris). Variant, image, and price update live when shoppers change options. Sticky button triggers the theme Add to cart."
+    },
+    {
+      "type": "checkbox",
+      "id": "always_show_bar",
+      "label": "Always show bar (testing)",
+      "default": false,
+      "info": "Turn on to verify the bar on the storefront without scrolling. Turn off for production."
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Sticky button label",
+      "default": "Add to cart"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_product_title",
+      "label": "Show product title",
+      "default": true
+    },
+    {
+      "type": "color",
+      "id": "bar_background",
+      "label": "Bar background (Polaris surface)",
+      "default": "#f6f6f7"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#202223"
+    },
+    {
+      "type": "color",
+      "id": "button_background",
+      "label": "Primary button (Polaris)",
+      "default": "#202223"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Button text color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "corner_radius",
+      "min": 0,
+      "max": 24,
+      "step": 2,
+      "unit": "px",
+      "label": "Corner radius",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "bar_padding",
+      "min": 8,
+      "max": 24,
+      "step": 2,
+      "unit": "px",
+      "label": "Bar padding",
+      "default": 12
+    },
+    {
+      "type": "range",
+      "id": "bottom_offset",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Offset from bottom",
+      "default": 0
+    },
+    {
+      "type": "number",
+      "id": "z_index",
+      "label": "Layer (z-index)",
+      "default": 100,
+      "info": "Raise to 500-1000 if the bar sits under menus or drawers."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_shadow",
+      "label": "Show top shadow",
+      "default": true
+    }
+  ]
+}
+{% endschema %}

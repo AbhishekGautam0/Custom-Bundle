@@ -1,18 +1,20 @@
 <div
-  id="bundle-block"
   class="bundle-widget"
+  data-bundle-block-root
+  id="bundle-widget-{{ block.id }}"
   data-main-product-id="{{ product.selected_or_first_available_variant.id }}"
   data-api-base-url="{{ block.settings.api_base_url }}"
   data-shop="{{ shop.permanent_domain }}"
+  data-show-live-errors="{% if block.settings.show_live_errors %}true{% else %}false{% endif %}"
 >
   <div class="bundle-widget__header">
     <h3 class="bundle-widget__title">Bundle & Save</h3>
     <p class="bundle-widget__subtitle">Choose extra products to add with this item.</p>
   </div>
-  <div id="bundle-products-container" class="bundle-widget__products">
-    Loading bundle...
+  <div data-bundle-products class="bundle-widget__products">
+    Loading bundle…
   </div>
-  <button type="button" id="bundle-add-to-cart" class="bundle-widget__button">
+  <button type="button" data-bundle-add-btn class="bundle-widget__button">
     Add bundle to cart
   </button>
 </div>
@@ -100,9 +102,22 @@
     opacity: 0.5;
     cursor: not-allowed;
   }
+  .bundle-widget__alert {
+    margin: 0;
+    padding: 12px;
+    border-radius: 8px;
+    background: #fff8e6;
+    border: 1px solid #e6c200;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .bundle-widget__alert code {
+    font-size: 12px;
+    word-break: break-all;
+  }
 </style>
 
-{{ 'bundle.js' | asset_url | script_tag }}
+<script src="{{ 'bundle.js' | asset_url }}" defer></script>
 
 {% schema %}
 {
@@ -111,10 +126,22 @@
   "templates": ["product"],
   "settings": [
     {
+      "type": "paragraph",
+      "content": "Use your app public URL from shopify app dev (tunnel URL like https://xxxx.trycloudflare.com). Do not use admin.shopify.com. The app must be running or deployed."
+    },
+    {
       "type": "text",
       "id": "api_base_url",
       "label": "App API base URL",
-      "default": "https://example.com"
+      "default": "https://example.com",
+      "info": "Must be HTTPS. Use the same URL as shopify app dev tunnel or your deployed app. Keep the app running when testing."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_live_errors",
+      "label": "Show setup hints on live storefront",
+      "default": true,
+      "info": "If the bundle cannot load, show a short message to shoppers (turn off after everything works)."
     }
   ]
 }
